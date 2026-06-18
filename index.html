@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#00e5ff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MSV">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>MSV Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;500;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0f; --panel:#0f0f1a; --border:#1a1a2e;
+  --accent:#00e5ff; --green:#00ff88; --red:#ff2244;
+  --orange:#ffaa00; --text:#e0e8ff; --muted:#4a5080;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Rajdhani',sans-serif;
+  display:flex;flex-direction:column;
+}
+
+/* ── HEADER ── */
+.hdr{
+  background:linear-gradient(135deg,#0f0f1a,#1a1a2e);
+  border-bottom:1px solid var(--accent);
+  padding:10px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+  box-shadow:0 0 30px rgba(0,229,255,.15);
+  z-index:50;
+}
+.logo{font-family:'Orbitron',monospace;font-size:20px;font-weight:900;letter-spacing:4px;color:var(--accent);text-shadow:0 0 20px rgba(0,229,255,.6)}
+.logo span{color:#fff}
+.hdr-right{display:flex;gap:8px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:all .3s;flex-shrink:0}
+.dot.on{background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 1.5s infinite}
+.dot.err{background:var(--red);box-shadow:0 0 8px var(--red)}
+.dot.warn{background:var(--orange);box-shadow:0 0 8px var(--orange)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+.hdr-btn{
+  background:transparent;border:1px solid var(--accent);color:var(--accent);
+  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:10px;letter-spacing:1px;
+  padding:4px 8px;border-radius:4px;cursor:pointer;transition:all .2s;text-transform:uppercase;
+}
+.hdr-btn:active{background:var(--accent);color:#000}
+.hdr-btn.active{border-color:var(--green);color:var(--green)}
+
+/* ── TABS ── */
+.tabs{
+  display:flex;background:#0c0c16;border-bottom:1px solid var(--border);
+  flex-shrink:0;overflow-x:auto;
+}
+.tab{
+  flex:1;min-width:60px;padding:10px 4px 8px;text-align:center;
+  font-family:'Orbitron',monospace;font-size:8px;letter-spacing:1px;
+  color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;
+  transition:all .2s;white-space:nowrap;
+}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-icon{font-size:16px;display:block;margin-bottom:2px}
+
+/* ── PAGES ── */
+.pages{flex:1;overflow:hidden;position:relative}
+.page{
+  position:absolute;inset:0;overflow-y:auto;
+  padding:12px;display:none;flex-direction:column;gap:10px;
+  -webkit-overflow-scrolling:touch;
+}
+.page.active{display:flex}
+
+/* ── CARDS ── */
+.card{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:14px;padding:14px;
+}
+.card-title{
+  font-family:'Orbitron',monospace;font-size:9px;letter-spacing:2px;
+  color:var(--muted);text-transform:uppercase;margin-bottom:10px;
+}
+
+/* ── RPM ── */
+.rpm-wrap{display:flex;flex-direction:column;align-items:center}
+.rpm-num{
+  font-family:'Orbitron',monospace;font-size:52px;font-weight:900;
+  color:#fff;text-shadow:0 0 30px rgba(0,229,255,.5);line-height:1;
+  margin-top:6px;transition:color .2s,text-shadow .2s;
+}
+.rpm-unit{font-size:12px;color:var(--accent);letter-spacing:3px;font-weight:700;margin-top:4px}
+.rpm-bar-track{width:100%;height:8px;background:#1a1a2e;border-radius:4px;margin-top:10px;overflow:hidden}
+.rpm-bar{height:100%;width:0%;border-radius:4px;background:linear-gradient(90deg,#00e5ff,#00ff88,#ffaa00,#ff2244);transition:width .1s}
+
+/* ── SPEED HERO ── */
+.speed-hero{
+  display:flex;align-items:center;justify-content:center;
+  gap:6px;padding:6px 0;
+}
+.speed-big{
+  font-family:'Orbitron',monospace;font-size:72px;font-weight:900;
+  color:#fff;line-height:1;text-shadow:0 0 40px rgba(0,229,255,.4);
+}
+.speed-side{display:flex;flex-direction:column;gap:4px;padding-top:12px}
+.speed-unit{font-family:'Orbitron',monospace;font-size:14px;color:var(--accent);letter-spacing:2px;font-weight:700}
+.src-pill{
+  font-size:9px;padding:3px 7px;border-radius:10px;letter-spacing:1px;
+  font-weight:700;text-transform:uppercase;
+}
+.src-pill.phone{background:rgba(0,229,255,.15);color:var(--accent);border:1px solid rgba(0,229,255,.4)}
+.src-pill.esp{background:rgba(0,255,136,.1);color:var(--green);border:1px solid rgba(0,255,136,.3)}
+.src-pill.none{background:rgba(74,80,128,.2);color:var(--muted);border:1px solid var(--border)}
+
+/* ── GRID 2 ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+
+/* ── STAT BOX ── */
+.stat{background:#0a0a0f;border:1px solid var(--border);border-radius:10px;padding:10px}
+.stat-key{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
+.stat-val{font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:#fff}
+.stat-val.green{color:var(--green)} .stat-val.red{color:var(--red)} .stat-val.orange{color:var(--orange)}
+.stat-val.sm{font-size:14px}
+
+/* ── DYN BARS ── */
+.dyn-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.dyn-label{font-size:10px;color:var(--muted);width:36px;letter-spacing:1px;text-transform:uppercase;flex-shrink:0}
+.dyn-track{flex:1;height:10px;background:#1a1a2e;border-radius:5px;overflow:hidden}
+.dyn-fill{height:100%;border-radius:5px;transition:width .15s}
+.dyn-fill.accel{background:linear-gradient(90deg,#00ff88,#00e5ff)}
+.dyn-fill.brake{background:linear-gradient(90deg,#ff2244,#ff6644)}
+.dyn-val{font-family:'Orbitron',monospace;font-size:11px;width:42px;text-align:right;flex-shrink:0}
+
+/* ── G-METER ── */
+.gmeter-wrap{display:flex;justify-content:center;margin-top:4px}
+
+/* ── DIVIDER ── */
+.divider{
+  display:flex;align-items:center;gap:8px;
+  font-family:'Orbitron',monospace;font-size:8px;letter-spacing:3px;color:var(--muted);
+}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── SESSION BAR ── */
+.session-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  background:#0a0a0f;border:1px solid var(--border);border-radius:10px;padding:10px 12px;
+}
+.session-info{display:flex;flex-direction:column;gap:2px}
+.session-time{font-family:'Orbitron',monospace;font-size:22px;font-weight:700;color:var(--accent)}
+.session-sub{font-size:10px;color:var(--muted);letter-spacing:1px}
+.rec-btn{
+  background:var(--red);border:none;color:#fff;
+  font-family:'Orbitron',monospace;font-size:10px;letter-spacing:2px;
+  padding:8px 14px;border-radius:8px;cursor:pointer;transition:all .2s;
+}
+.rec-btn.recording{background:#1a0a0f;border:1px solid var(--red);color:var(--red);animation:blink 1s infinite}
+.rec-btn:active{opacity:.7}
+
+/* ── REPORTS LIST ── */
+.rep-list{display:flex;flex-direction:column;gap:8px}
+.rep-item{
+  background:#0a0a0f;border:1px solid var(--border);border-radius:10px;
+  padding:12px;cursor:pointer;transition:border-color .2s;
+}
+.rep-item:active{border-color:var(--accent)}
+.rep-item-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.rep-name{font-family:'Orbitron',monospace;font-size:11px;color:var(--accent)}
+.rep-date{font-size:9px;color:var(--muted);letter-spacing:1px}
+.rep-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px}
+.rep-stat{text-align:center}
+.rep-stat-val{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:#fff}
+.rep-stat-key{font-size:8px;color:var(--muted);letter-spacing:1px}
+.rep-actions{display:flex;gap:6px;margin-top:8px}
+.rep-btn{
+  flex:1;background:transparent;border:1px solid var(--border);color:var(--muted);
+  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;
+  padding:6px;border-radius:6px;cursor:pointer;transition:all .2s;text-transform:uppercase;
+}
+.rep-btn.export{border-color:var(--accent);color:var(--accent)}
+.rep-btn.del{border-color:var(--red);color:var(--red)}
+.rep-btn:active{opacity:.6}
+.empty-state{
+  text-align:center;padding:40px 20px;
+  font-family:'Orbitron',monospace;font-size:11px;color:var(--muted);letter-spacing:2px;
+}
+.empty-icon{font-size:40px;margin-bottom:12px}
+
+/* ── ALERT ── */
+.alert{
+  position:fixed;top:70px;left:12px;right:12px;
+  background:rgba(255,34,68,.95);color:#fff;
+  font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px;
+  text-align:center;padding:10px;border-radius:8px;z-index:200;
+  display:none;animation:slideDown .3s ease;
+}
+@keyframes slideDown{from{transform:translateY(-20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
+  background:rgba(0,229,255,.9);color:#000;
+  font-family:'Orbitron',monospace;font-size:10px;letter-spacing:2px;
+  padding:8px 16px;border-radius:20px;z-index:300;
+  display:none;white-space:nowrap;animation:fadeUp .3s ease;
+}
+@keyframes fadeUp{from{transform:translateX(-50%) translateY(10px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+
+/* ── BT STATUS ── */
+.bt-row{
+  display:flex;align-items:center;gap:8px;
+  background:#0a0a0f;border:1px solid var(--border);border-radius:10px;padding:10px;
+  font-size:11px;color:var(--muted);letter-spacing:1px;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* ── REPORT DETAIL MODAL ── */
+.modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:400;
+  display:none;flex-direction:column;
+}
+.modal.open{display:flex}
+.modal-inner{
+  background:var(--panel);border-top:1px solid var(--accent);
+  flex:1;margin-top:60px;border-radius:20px 20px 0 0;
+  overflow-y:auto;padding:20px;
+}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.modal-title{font-family:'Orbitron',monospace;font-size:14px;color:var(--accent)}
+.modal-close{background:transparent;border:1px solid var(--border);color:var(--muted);font-size:18px;width:32px;height:32px;border-radius:8px;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="alert" id="alertEl"></div>
+<div class="toast" id="toastEl"></div>
+
+<!-- REPORT DETAIL MODAL -->
+<div class="modal" id="modal">
+  <div class="modal-inner">
+    <div class="modal-hdr">
+      <div class="modal-title" id="modalTitle">Relatório</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="logo">MS<span>V</span></div>
+  <div class="hdr-right">
+    <div class="dot" id="dBT" title="Bluetooth"></div>
+    <div class="dot" id="dGPS" title="GPS Celular"></div>
+    <div class="dot" id="dMPU" title="MPU6050"></div>
+    <button class="hdr-btn" id="btBtn" onclick="toggleBT()">BT</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="goTab(0)"><span class="tab-icon">⚡</span>LIVE</div>
+  <div class="tab" onclick="goTab(1)"><span class="tab-icon">🛰</span>GPS</div>
+  <div class="tab" onclick="goTab(2)"><span class="tab-icon">📊</span>DINÂM</div>
+  <div class="tab" onclick="goTab(3)"><span class="tab-icon">📋</span>RELAT</div>
+</div>
+
+<!-- PAGES -->
+<div class="pages">
+
+  <!-- PAGE 0: LIVE -->
+  <div class="page active" id="page0">
+
+    <!-- Session -->
+    <div class="session-bar">
+      <div class="session-info">
+        <div class="session-time" id="sessionTime">00:00:00</div>
+        <div class="session-sub" id="sessionSub">SESSÃO PARADA</div>
+      </div>
+      <button class="rec-btn" id="recBtn" onclick="toggleRecording()">● REC</button>
+    </div>
+
+    <!-- BT -->
+    <div class="bt-row">
+      <div class="dot" id="btDot"></div>
+      <span id="btText">Bluetooth desconectado</span>
+    </div>
+
+    <!-- RPM -->
+    <div class="card">
+      <div class="card-title">⚡ RPM</div>
+      <div class="rpm-wrap">
+        <canvas id="rpmCanvas" width="300" height="150" style="max-width:100%"></canvas>
+        <div class="rpm-num" id="rpmNum">0</div>
+        <div class="rpm-unit">RPM</div>
+        <div class="rpm-bar-track"><div class="rpm-bar" id="rpmBar"></div></div>
+      </div>
+    </div>
+
+    <!-- Quick stats -->
+    <div class="grid3">
+      <div class="stat">
+        <div class="stat-key">Velocidade</div>
+        <div class="stat-val sm" id="qs-spd">0 <span style="font-size:9px;color:var(--muted)">km/h</span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-key">Temp</div>
+        <div class="stat-val sm" id="qs-tmp">—°C</div>
+      </div>
+      <div class="stat">
+        <div class="stat-key">Bateria</div>
+        <div class="stat-val sm" id="qs-bat">—V</div>
+      </div>
+    </div>
+
+    <!-- MPU Telemetry -->
+    <div class="card">
+      <div class="card-title">📡 Telemetria ESP32</div>
+      <div class="grid2">
+        <div class="stat"><div class="stat-key">MPU6050</div><div class="stat-val red" id="t-mpu">OFF</div></div>
+        <div class="stat"><div class="stat-key">GPS ESP32</div><div class="stat-val red" id="t-gps">OFF</div></div>
+        <div class="stat"><div class="stat-key">Gyro X</div><div class="stat-val sm" id="t-gx">0.000</div></div>
+        <div class="stat"><div class="stat-key">Gyro Y</div><div class="stat-val sm" id="t-gy">0.000</div></div>
+        <div class="stat"><div class="stat-key">Accel X</div><div class="stat-val sm" id="t-ax">0.000</div></div>
+        <div class="stat"><div class="stat-key">Accel Y</div><div class="stat-val sm" id="t-ay">0.000</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 1: GPS -->
+  <div class="page" id="page1">
+
+    <!-- Speed hero -->
+    <div class="card">
+      <div class="card-title">🛰 Velocidade</div>
+      <div class="speed-hero">
+        <div class="speed-big" id="spd-big">0</div>
+        <div class="speed-side">
+          <div class="speed-unit">KM/H</div>
+          <div id="src-pill"><span class="src-pill none">SEM GPS</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats grid -->
+    <div class="grid2">
+      <div class="stat">
+        <div class="stat-key">Vel. Máxima</div>
+        <div class="stat-val orange" id="g-maxspd">0.0 km/h</div>
+      </div>
+      <div class="stat">
+        <div class="stat-key">Vel. Média</div>
+        <div class="stat-val" id="g-avgspd">0.0 km/h</div>
+      </div>
+    </div>
+
+    <div class="divider">Distância & Deslocamento</div>
+
+    <div class="grid2">
+      <div class="stat">
+        <div class="stat-key">Distância total</div>
+        <div class="stat-val green" id="g-dist">0.00 km</div>
+      </div>
+      <div class="stat">
+        <div class="stat-key">Deslocamento</div>
+        <div class="stat-val" id="g-disp">0.00 km</div>
+      </div>
+      <div class="stat">
+        <div class="stat-key">Satélites</div>
+        <div class="stat-val" id="g-sats">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-key">Precisão GPS</div>
+        <div class="stat-val" id="g-acc">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-key">Latitude</div>
+        <div class="stat-val sm" id="g-lat">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-key">Longitude</div>
+        <div class="stat-val sm" id="g-lon">—</div>
+      </div>
+    </div>
+
+    <div class="divider">Posição inicial</div>
+    <div class="grid2">
+      <div class="stat">
+        <div class="stat-key">Lat. Inicial</div>
+        <div class="stat-val sm" id="g-ilat">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-key">Lon. Inicial</div>
+        <div class="stat-val sm" id="g-ilon">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 2: DYNAMICS -->
+  <div class="page" id="page2">
+
+    <!-- Accel / Brake bars -->
+    <div class="card">
+      <div class="card-title">⚡ Aceleração e Frenagem</div>
+      <div class="dyn-row">
+        <div class="dyn-label" style="color:var(--green)">ACEL</div>
+        <div class="dyn-track"><div class="dyn-fill accel" id="accelBar" style="width:0%"></div></div>
+        <div class="dyn-val green" id="accelVal">0.0</div>
+      </div>
+      <div class="dyn-row">
+        <div class="dyn-label" style="color:var(--red)">FREN</div>
+        <div class="dyn-track"><div class="dyn-fill brake" id="brakeBar" style="width:0%"></div></div>
+        <div class="dyn-val red" id="brakeVal">0.0</div>
+      </div>
+      <div style="font-size:9px;color:var(--muted);text-align:right;margin-top:4px;letter-spacing:1px">m/s²</div>
+    </div>
+
+    <div class="grid2">
+      <div class="stat">
+        <div class="stat-key">Acel. Máx</div>
+        <div class="stat-val green" id="d-maxacc">0.0 m/s²</div>
+      </div>
+      <div class="stat">
+        <div class="stat-key">Fren. Máx</div>
+        <div class="stat-val red" id="d-maxbrk">0.0 m/s²</div>
+      </div>
+    </div>
+
+    <!-- G-Meter -->
+    <div class="card">
+      <div class="card-title">🎯 G-Meter</div>
+      <div class="gmeter-wrap">
+        <canvas id="gmCanvas" width="240" height="200" style="max-width:100%"></canvas>
+      </div>
+    </div>
+
+    <!-- Gyro -->
+    <div class="card">
+      <div class="card-title">🔄 Giroscópio (ESP32)</div>
+      <div class="grid3">
+        <div class="stat"><div class="stat-key">X</div><div class="stat-val sm" id="d-gx">0.00</div></div>
+        <div class="stat"><div class="stat-key">Y</div><div class="stat-val sm" id="d-gy">0.00</div></div>
+        <div class="stat"><div class="stat-key">Z</div><div class="stat-val sm" id="d-gz">0.00</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 3: REPORTS -->
+  <div class="page" id="page3">
+
+    <div class="card" style="padding:10px 14px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="card-title" style="margin:0">📋 Sessões salvas</div>
+        <button class="hdr-btn" onclick="clearAllReports()" style="font-size:9px;border-color:var(--red);color:var(--red)">LIMPAR TUDO</button>
+      </div>
+    </div>
+
+    <div class="rep-list" id="repList">
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        Nenhuma sessão salva ainda.<br>Pressione REC para gravar.
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+const S = {
+  rpm:0, speed:0, temp:0, battery:0,
+  mpuOk:false, gpsESPOk:false, satellites:0,
+  gx:0,gy:0,gz:0, ax:0,ay:0,az:0,
+  lat:null,lon:null,
+
+  // Session metrics
+  maxSpeed:0, totalSpeed:0, speedSamples:0,
+  accel:0, brake:0, maxAccel:0, maxBrake:0,
+  distance:0,          // km (caminho percorrido)
+  displacement:0,      // km (distância em linha reta da origem)
+  originLat:null, originLon:null,
+  prevLat:null, prevLon:null,
+
+  // GPS celular
+  phoneGPS:false, gpsAcc:null,
+  speedSrc:'none', // 'phone'|'esp'|'none'
+  prevSpdKmh:0, prevSpdTime:0,
+
+  // BT
+  btConnected:false,
+
+  // Recording
+  recording:false,
+  sessionStart:0,
+  sessionSec:0,
+
+  // G-meter trail
+  trail:[],
+};
+
+const MAX_RPM = 8000;
+const MAX_G = 6; // m/s² para 100% da barra
+
+// ════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════
+function goTab(i){
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
+  document.querySelectorAll('.page').forEach((p,j)=>p.classList.toggle('active',i===j));
+}
+
+// ════════════════════════════════════════════
+// BLUETOOTH
+// ════════════════════════════════════════════
+let btDevice=null, btChar=null, btBuf='';
+
+async function toggleBT(){
+  if(S.btConnected) disconnectBT();
+  else connectBT();
+}
+
+async function connectBT(){
+  if(!navigator.bluetooth){showAlert('Web Bluetooth requer Chrome no Android');return}
+  try{
+    btDevice=await navigator.bluetooth.requestDevice({
+      acceptAllDevices:true,
+      optionalServices:['0000ffe0-0000-1000-8000-00805f9b34fb']
+    });
+    const srv=await btDevice.gatt.connect();
+    const svc=await srv.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+    btChar=await svc.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+    await btChar.startNotifications();
+    btChar.addEventListener('characteristicvaluechanged',onBTData);
+    btDevice.addEventListener('gattserverdisconnected',()=>setBT(false,'Bluetooth desconectado'));
+    setBT(true,`Conectado: ${btDevice.name||'MSV_ESP32'}`);
+  }catch(e){if(e.name!=='NotFoundError')showAlert('BT: '+e.message)}
+}
+
+function disconnectBT(){
+  if(btDevice&&btDevice.gatt.connected)btDevice.gatt.disconnect();
+  setBT(false,'Bluetooth desconectado');
+}
+
+function setBT(ok,msg){
+  S.btConnected=ok;
+  document.getElementById('btDot').className='dot '+(ok?'on':'');
+  document.getElementById('dBT').className='dot '+(ok?'on':'err');
+  document.getElementById('btText').textContent=msg;
+  const btn=document.getElementById('btBtn');
+  btn.textContent=ok?'DESCON':'BT';
+  btn.className='hdr-btn'+(ok?' active':'');
+}
+
+function onBTData(e){
+  btBuf+=new TextDecoder().decode(e.target.value);
+  let nl;
+  while((nl=btBuf.indexOf('\n'))!==-1){
+    const line=btBuf.slice(0,nl).trim();
+    btBuf=btBuf.slice(nl+1);
+    if(line)parseBT(line);
+  }
+}
+
+function parseBT(line){
+  try{
+    const d=JSON.parse(line);
+    if(d.rpm!==undefined) S.rpm=d.rpm;
+    if(d.gyro_x!==undefined) S.gx=d.gyro_x;
+    if(d.gyro_y!==undefined) S.gy=d.gyro_y;
+    if(d.gyro_z!==undefined) S.gz=d.gyro_z;
+    if(d.accel_x!==undefined) S.ax=d.accel_x;
+    if(d.accel_y!==undefined) S.ay=d.accel_y;
+    if(d.accel_z!==undefined) S.az=d.accel_z;
+    if(d.temperatura!==undefined) S.temp=d.temperatura;
+    if(d.bateria!==undefined) S.battery=d.bateria;
+    if(d.mpu_ok!==undefined) S.mpuOk=d.mpu_ok;
+    if(d.gps_ok!==undefined) S.gpsESPOk=d.gps_ok;
+    if(d.satelites!==undefined) S.satellites=d.satelites;
+    // Velocidade ESP32 como fallback
+    if(!S.phoneGPS && d.velocidade!==undefined){
+      S.speed=d.velocidade;
+      S.speedSrc='esp';
+    }
+  }catch(e){}
+}
+
+// ════════════════════════════════════════════
+// GPS CELULAR
+// ════════════════════════════════════════════
+function startGPS(){
+  if(!navigator.geolocation)return;
+  navigator.geolocation.watchPosition(pos=>{
+    S.phoneGPS=true;
+    S.speedSrc='phone';
+    S.gpsAcc=pos.coords.accuracy;
+    S.lat=pos.coords.latitude;
+    S.lon=pos.coords.longitude;
+
+    document.getElementById('dGPS').className='dot on';
+
+    // Velocidade
+    const now=Date.now();
+    const rawSpd=pos.coords.speed;
+    const kmh=rawSpd!=null&&rawSpd>=0 ? rawSpd*3.6 : 0;
+
+    // Aceleração / frenagem por dv/dt
+    if(S.prevSpdTime>0){
+      const dt=(now-S.prevSpdTime)/1000;
+      if(dt>0&&dt<5){
+        const dv=(kmh-S.prevSpdKmh)/3.6;
+        const a=dv/dt;
+        if(a>0.5){S.accel=a;S.brake=0;if(a>S.maxAccel)S.maxAccel=a;}
+        else if(a<-0.5){S.brake=Math.abs(a);S.accel=0;if(Math.abs(a)>S.maxBrake)S.maxBrake=Math.abs(a);}
+        else{S.accel=0;S.brake=0;}
+      }
+    }
+    S.prevSpdKmh=kmh;
+    S.prevSpdTime=now;
+    S.speed=kmh;
+    if(kmh>S.maxSpeed)S.maxSpeed=kmh;
+    if(kmh>0){S.totalSpeed+=kmh;S.speedSamples++;}
+
+    // Distância e deslocamento
+    if(S.recording&&S.prevLat!=null){
+      const d=haversine(S.prevLat,S.prevLon,S.lat,S.lon);
+      if(d<0.5) S.distance+=d; // ignora saltos > 500m (GPS noise)
+    }
+    if(S.recording&&S.originLat==null){
+      S.originLat=S.lat; S.originLon=S.lon;
+    }
+    if(S.originLat!=null){
+      S.displacement=haversine(S.originLat,S.originLon,S.lat,S.lon);
+    }
+    S.prevLat=S.lat; S.prevLon=S.lon;
+
+  },err=>{
+    S.phoneGPS=false;
+    document.getElementById('dGPS').className='dot err';
+  },{enableHighAccuracy:true,maximumAge:500,timeout:8000});
+}
+
+function haversine(la1,lo1,la2,lo2){
+  const R=6371;
+  const dLat=(la2-la1)*Math.PI/180;
+  const dLon=(lo2-lo1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+// ════════════════════════════════════════════
+// RECORDING
+// ════════════════════════════════════════════
+let sessionTimer=null;
+
+function toggleRecording(){
+  if(!S.recording){
+    // Start
+    S.recording=true;
+    S.sessionStart=Date.now();
+    S.sessionSec=0;
+    // Reset session metrics
+    S.distance=0;S.displacement=0;
+    S.originLat=null;S.originLon=null;
+    S.prevLat=S.lat;S.prevLon=S.lon;
+    S.maxSpeed=0;S.totalSpeed=0;S.speedSamples=0;
+    S.maxAccel=0;S.maxBrake=0;
+    sessionTimer=setInterval(()=>{
+      S.sessionSec=Math.floor((Date.now()-S.sessionStart)/1000);
+    },1000);
+    document.getElementById('recBtn').className='rec-btn recording';
+    document.getElementById('recBtn').textContent='■ STOP';
+    document.getElementById('sessionSub').textContent='● GRAVANDO';
+    showToast('Sessão iniciada');
+  } else {
+    // Stop & save
+    S.recording=false;
+    clearInterval(sessionTimer);
+    document.getElementById('recBtn').className='rec-btn';
+    document.getElementById('recBtn').textContent='● REC';
+    document.getElementById('sessionSub').textContent='SESSÃO PARADA';
+    saveSession();
+    showToast('Sessão salva!');
+  }
+}
+
+function fmtTime(sec){
+  const h=Math.floor(sec/3600);
+  const m=Math.floor((sec%3600)/60);
+  const s=sec%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+// ════════════════════════════════════════════
+// LOCAL STORAGE — SESSIONS
+// ════════════════════════════════════════════
+function saveSession(){
+  const sessions=getSessions();
+  const id='s'+Date.now();
+  sessions.push({
+    id,
+    name:'Sessão '+new Date().toLocaleDateString('pt-BR'),
+    date:new Date().toISOString(),
+    duration:S.sessionSec,
+    maxSpeed:S.maxSpeed,
+    avgSpeed:S.speedSamples>0?S.totalSpeed/S.speedSamples:0,
+    distance:S.distance,
+    displacement:S.displacement,
+    maxAccel:S.maxAccel,
+    maxBrake:S.maxBrake,
+    endLat:S.lat,endLon:S.lon,
+    originLat:S.originLat,originLon:S.originLon,
+  });
+  localStorage.setItem('msv_sessions',JSON.stringify(sessions));
+  renderReports();
+}
+
+function getSessions(){
+  try{return JSON.parse(localStorage.getItem('msv_sessions'))||[];}catch{return [];}
+}
+
+function deleteSession(id){
+  const sessions=getSessions().filter(s=>s.id!==id);
+  localStorage.setItem('msv_sessions',JSON.stringify(sessions));
+  renderReports();
+}
+
+function clearAllReports(){
+  if(!confirm('Apagar todas as sessões?'))return;
+  localStorage.removeItem('msv_sessions');
+  renderReports();
+}
+
+function renderReports(){
+  const sessions=getSessions().reverse();
+  const el=document.getElementById('repList');
+  if(!sessions.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div>Nenhuma sessão salva ainda.<br>Pressione REC para gravar.</div>';
+    return;
+  }
+  el.innerHTML=sessions.map(s=>`
+    <div class="rep-item">
+      <div class="rep-item-header">
+        <div class="rep-name">${s.name}</div>
+        <div class="rep-date">${new Date(s.date).toLocaleString('pt-BR')}</div>
+      </div>
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:6px">⏱ ${fmtTime(s.duration)}</div>
+      <div class="rep-stats">
+        <div class="rep-stat">
+          <div class="rep-stat-val" style="color:var(--accent)">${s.maxSpeed.toFixed(0)}</div>
+          <div class="rep-stat-key">km/h MAX</div>
+        </div>
+        <div class="rep-stat">
+          <div class="rep-stat-val" style="color:var(--green)">${s.distance.toFixed(2)}</div>
+          <div class="rep-stat-key">km DIST</div>
+        </div>
+        <div class="rep-stat">
+          <div class="rep-stat-val" style="color:var(--orange)">${s.displacement.toFixed(2)}</div>
+          <div class="rep-stat-key">km DESLOC</div>
+        </div>
+      </div>
+      <div class="rep-actions">
+        <button class="rep-btn" onclick="showDetail('${s.id}')">VER</button>
+        <button class="rep-btn export" onclick="exportCSV('${s.id}')">CSV</button>
+        <button class="rep-btn del" onclick="deleteSession('${s.id}')">APAGAR</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function showDetail(id){
+  const s=getSessions().find(x=>x.id===id);
+  if(!s)return;
+  document.getElementById('modalTitle').textContent=s.name;
+  document.getElementById('modalBody').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="stat"><div class="stat-key">Duração</div><div class="stat-val sm">${fmtTime(s.duration)}</div></div>
+      <div class="stat"><div class="stat-key">Data</div><div class="stat-val sm" style="font-size:12px">${new Date(s.date).toLocaleString('pt-BR')}</div></div>
+      <div class="stat"><div class="stat-key">Vel. Máxima</div><div class="stat-val orange">${s.maxSpeed.toFixed(1)} km/h</div></div>
+      <div class="stat"><div class="stat-key">Vel. Média</div><div class="stat-val">${s.avgSpeed.toFixed(1)} km/h</div></div>
+      <div class="stat"><div class="stat-key">Distância total</div><div class="stat-val green">${s.distance.toFixed(3)} km</div></div>
+      <div class="stat"><div class="stat-key">Deslocamento</div><div class="stat-val">${s.displacement.toFixed(3)} km</div></div>
+      <div class="stat"><div class="stat-key">Acel. Máxima</div><div class="stat-val green">${s.maxAccel.toFixed(2)} m/s²</div></div>
+      <div class="stat"><div class="stat-key">Fren. Máxima</div><div class="stat-val red">${s.maxBrake.toFixed(2)} m/s²</div></div>
+      ${s.originLat?`
+      <div class="stat"><div class="stat-key">Lat. Inicial</div><div class="stat-val sm" style="font-size:12px">${s.originLat.toFixed(6)}</div></div>
+      <div class="stat"><div class="stat-key">Lon. Inicial</div><div class="stat-val sm" style="font-size:12px">${s.originLon.toFixed(6)}</div></div>
+      <div class="stat"><div class="stat-key">Lat. Final</div><div class="stat-val sm" style="font-size:12px">${(s.endLat||0).toFixed(6)}</div></div>
+      <div class="stat"><div class="stat-key">Lon. Final</div><div class="stat-val sm" style="font-size:12px">${(s.endLon||0).toFixed(6)}</div></div>
+      `:''}
+    </div>
+  `;
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(){document.getElementById('modal').classList.remove('open')}
+
+function exportCSV(id){
+  const s=getSessions().find(x=>x.id===id);
+  if(!s)return;
+  const rows=[
+    ['Campo','Valor'],
+    ['Nome',s.name],
+    ['Data',new Date(s.date).toLocaleString('pt-BR')],
+    ['Duração (s)',s.duration],
+    ['Vel. Máxima (km/h)',s.maxSpeed.toFixed(2)],
+    ['Vel. Média (km/h)',s.avgSpeed.toFixed(2)],
+    ['Distância (km)',s.distance.toFixed(4)],
+    ['Deslocamento (km)',s.displacement.toFixed(4)],
+    ['Acel. Máxima (m/s²)',s.maxAccel.toFixed(3)],
+    ['Fren. Máxima (m/s²)',s.maxBrake.toFixed(3)],
+    ['Lat. Inicial',s.originLat||''],
+    ['Lon. Inicial',s.originLon||''],
+    ['Lat. Final',s.endLat||''],
+    ['Lon. Final',s.endLon||''],
+  ];
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`niko_${id}.csv`;
+  a.click();
+  showToast('CSV exportado!');
+}
+
+// ════════════════════════════════════════════
+// DRAW RPM ARC
+// ════════════════════════════════════════════
+function drawRPM(rpm){
+  const cv=document.getElementById('rpmCanvas');
+  const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  const cx=W/2,cy=H-8,R=Math.min(W/2-10,H-20);
+  const pct=Math.min(rpm/MAX_RPM,1);
+  const sa=Math.PI,ea=0;
+
+  // Track
+  ctx.beginPath();ctx.arc(cx,cy,R,sa,ea,false);
+  ctx.strokeStyle='#1a1a2e';ctx.lineWidth=12;ctx.lineCap='round';ctx.stroke();
+
+  // Active
+  if(pct>0){
+    const g=ctx.createLinearGradient(cx-R,cy,cx+R,cy);
+    g.addColorStop(0,'#00e5ff');g.addColorStop(.5,'#00ff88');
+    g.addColorStop(.75,'#ffaa00');g.addColorStop(1,'#ff2244');
+    ctx.beginPath();ctx.arc(cx,cy,R,sa,sa+Math.PI*pct,false);
+    ctx.strokeStyle=g;ctx.lineWidth=12;ctx.lineCap='round';ctx.stroke();
+    // Glow
+    ctx.beginPath();ctx.arc(cx,cy,R,sa,sa+Math.PI*pct,false);
+    ctx.strokeStyle='rgba(0,229,255,.15)';ctx.lineWidth=20;ctx.stroke();
+  }
+
+  // Ticks
+  for(let i=0;i<=8;i++){
+    const a=Math.PI+Math.PI*i/8;
+    const r1=R-(i%2===0?18:10),r2=R-4;
+    ctx.beginPath();
+    ctx.moveTo(cx+r1*Math.cos(a),cy+r1*Math.sin(a));
+    ctx.lineTo(cx+r2*Math.cos(a),cy+r2*Math.sin(a));
+    ctx.strokeStyle=i%2===0?'#2a3060':'#1a2040';
+    ctx.lineWidth=i%2===0?2:1;ctx.stroke();
+    if(i%2===0){
+      ctx.fillStyle='#2a3060';ctx.font='8px Orbitron,monospace';ctx.textAlign='center';
+      ctx.fillText(i*1000,cx+(R-30)*Math.cos(a),cy+(R-30)*Math.sin(a)+3);
+    }
+  }
+
+  // Needle tip
+  if(pct>0){
+    const na=sa+Math.PI*pct;
+    ctx.beginPath();ctx.arc(cx+R*Math.cos(na),cy+R*Math.sin(na),5,0,Math.PI*2);
+    ctx.fillStyle='#fff';ctx.shadowColor='#fff';ctx.shadowBlur=12;ctx.fill();ctx.shadowBlur=0;
+  }
+}
+
+// ════════════════════════════════════════════
+// DRAW G-METER
+// ════════════════════════════════════════════
+function drawGM(){
+  const cv=document.getElementById('gmCanvas');
+  const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  const cx=W/2,cy=H/2,R=Math.min(W,H)/2-16;
+
+  // BG
+  ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);
+  ctx.fillStyle='#0a0a0f';ctx.fill();
+  ctx.strokeStyle='#1a1a2e';ctx.lineWidth=1;ctx.stroke();
+
+  // Rings
+  [.33,.66,1].forEach(f=>{
+    ctx.beginPath();ctx.arc(cx,cy,R*f,0,Math.PI*2);
+    ctx.strokeStyle='#1a1a2e';ctx.lineWidth=1;ctx.stroke();
+  });
+
+  // Crosshair
+  ctx.strokeStyle='#1a1a2e';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(cx-R,cy);ctx.lineTo(cx+R,cy);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx,cy-R);ctx.lineTo(cx,cy+R);ctx.stroke();
+
+  // Labels
+  ctx.fillStyle='#2a3060';ctx.font='8px Orbitron,monospace';ctx.textAlign='center';
+  ctx.fillText('ACEL',cx,cy-R-5);ctx.fillText('FREN',cx,cy+R+11);
+  ctx.fillText('ESQ',cx-R-4,cy+3);ctx.fillText('DIR',cx+R+4,cy+3);
+  ctx.fillText('1G',cx+R+2,cy-R*0.95);
+
+  // Trail
+  S.trail.forEach((pt,i)=>{
+    ctx.beginPath();ctx.arc(pt.x,pt.y,2,0,Math.PI*2);
+    ctx.fillStyle=`rgba(0,229,255,${(i/S.trail.length)*0.4})`;ctx.fill();
+  });
+
+  // Current point
+  const maxG=4;
+  const lngG=S.accel-S.brake;
+  const latG=S.gz*4;
+  const px=cx+Math.max(-1,Math.min(1,latG/maxG))*R;
+  const py=cy-Math.max(-1,Math.min(1,lngG/maxG))*R;
+  S.trail.push({x:px,y:py});
+  if(S.trail.length>40)S.trail.shift();
+
+  ctx.beginPath();ctx.arc(px,py,9,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,229,255,.2)';ctx.fill();
+  ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);
+  ctx.fillStyle='#00e5ff';ctx.shadowColor='#00e5ff';ctx.shadowBlur=15;ctx.fill();ctx.shadowBlur=0;
+}
+
+// ════════════════════════════════════════════
+// UPDATE UI
+// ════════════════════════════════════════════
+function updateUI(){
+  const rpm=Math.max(0,Math.round(S.rpm));
+  const spd=Math.max(0,S.speed);
+
+  // ── PAGE 0 ──
+  drawRPM(rpm);
+  const rn=document.getElementById('rpmNum');
+  rn.textContent=rpm.toLocaleString();
+  if(rpm>7000){rn.style.color='#ff2244';rn.style.textShadow='0 0 30px rgba(255,34,68,.8)'}
+  else if(rpm>5500){rn.style.color='#ffaa00';rn.style.textShadow='0 0 30px rgba(255,170,0,.6)'}
+  else{rn.style.color='#fff';rn.style.textShadow='0 0 30px rgba(0,229,255,.5)'}
+  document.getElementById('rpmBar').style.width=Math.min(rpm/MAX_RPM*100,100)+'%';
+
+  document.getElementById('qs-spd').innerHTML=Math.round(spd)+' <span style="font-size:9px;color:var(--muted)">km/h</span>';
+  document.getElementById('qs-tmp').textContent=S.mpuOk?S.temp.toFixed(1)+'°C':'—°C';
+  document.getElementById('qs-bat').textContent=S.battery.toFixed(2)+'V';
+
+  const mpuEl=document.getElementById('t-mpu');
+  mpuEl.textContent=S.mpuOk?'ON':'OFF';mpuEl.className='stat-val '+(S.mpuOk?'green':'red');
+  document.getElementById('dMPU').className='dot '+(S.mpuOk?'on':'err');
+  const gpsEl=document.getElementById('t-gps');
+  gpsEl.textContent=S.gpsESPOk?'ON':'OFF';gpsEl.className='stat-val '+(S.gpsESPOk?'green':'red');
+  document.getElementById('t-gx').textContent=S.gx.toFixed(3);
+  document.getElementById('t-gy').textContent=S.gy.toFixed(3);
+  document.getElementById('t-ax').textContent=S.ax.toFixed(3);
+  document.getElementById('t-ay').textContent=S.ay.toFixed(3);
+
+  // Session timer
+  document.getElementById('sessionTime').textContent=fmtTime(S.sessionSec);
+
+  // ── PAGE 1 GPS ──
+  document.getElementById('spd-big').textContent=Math.round(spd);
+
+  const pill=document.getElementById('src-pill');
+  if(S.speedSrc==='phone') pill.innerHTML='<span class="src-pill phone">📱 CELULAR</span>';
+  else if(S.speedSrc==='esp') pill.innerHTML='<span class="src-pill esp">📡 ESP32</span>';
+  else pill.innerHTML='<span class="src-pill none">SEM GPS</span>';
+
+  document.getElementById('g-maxspd').textContent=S.maxSpeed.toFixed(1)+' km/h';
+  const avg=S.speedSamples>0?S.totalSpeed/S.speedSamples:0;
+  document.getElementById('g-avgspd').textContent=avg.toFixed(1)+' km/h';
+  document.getElementById('g-dist').textContent=S.distance.toFixed(3)+' km';
+  document.getElementById('g-disp').textContent=S.displacement.toFixed(3)+' km';
+  document.getElementById('g-sats').textContent=S.satellites||'—';
+  document.getElementById('g-acc').textContent=S.gpsAcc?S.gpsAcc.toFixed(0)+'m':'—';
+  document.getElementById('g-lat').textContent=S.lat!=null?S.lat.toFixed(6):'—';
+  document.getElementById('g-lon').textContent=S.lon!=null?S.lon.toFixed(6):'—';
+  document.getElementById('g-ilat').textContent=S.originLat!=null?S.originLat.toFixed(6):'—';
+  document.getElementById('g-ilon').textContent=S.originLon!=null?S.originLon.toFixed(6):'—';
+
+  // ── PAGE 2 DYNAMICS ──
+  document.getElementById('accelVal').textContent=S.accel.toFixed(1);
+  document.getElementById('brakeVal').textContent=S.brake.toFixed(1);
+  document.getElementById('accelBar').style.width=Math.min(S.accel/MAX_G*100,100)+'%';
+  document.getElementById('brakeBar').style.width=Math.min(S.brake/MAX_G*100,100)+'%';
+  document.getElementById('d-maxacc').textContent=S.maxAccel.toFixed(2)+' m/s²';
+  document.getElementById('d-maxbrk').textContent=S.maxBrake.toFixed(2)+' m/s²';
+  document.getElementById('d-gx').textContent=S.gx.toFixed(2);
+  document.getElementById('d-gy').textContent=S.gy.toFixed(2);
+  document.getElementById('d-gz').textContent=S.gz.toFixed(2);
+  drawGM();
+}
+
+// ════════════════════════════════════════════
+// ALERT / TOAST
+// ════════════════════════════════════════════
+let alertTO=null;
+function showAlert(msg){
+  const el=document.getElementById('alertEl');
+  el.textContent=msg;el.style.display='block';
+  if(alertTO)clearTimeout(alertTO);
+  alertTO=setTimeout(()=>el.style.display='none',4000);
+}
+
+let toastTO=null;
+function showToast(msg){
+  const el=document.getElementById('toastEl');
+  el.textContent=msg;el.style.display='block';
+  if(toastTO)clearTimeout(toastTO);
+  toastTO=setTimeout(()=>el.style.display='none',2500);
+}
+
+// ════════════════════════════════════════════
+// SERVICE WORKER
+// ════════════════════════════════════════════
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').then(reg=>{reg.update();
+    showToast('App instalável! Toque em ⋮ → Instalar');
+  }).catch(()=>{});
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+startGPS();
+renderReports();
+drawRPM(0);
+drawGM();
+setInterval(updateUI,100);
+</script>
+</body>
+</html>
