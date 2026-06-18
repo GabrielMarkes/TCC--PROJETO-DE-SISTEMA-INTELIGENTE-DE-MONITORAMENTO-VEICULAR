@@ -1,0 +1,256 @@
+#include <TinyGPS++.h>
+#include <HardwareSerial.h>
+#include <ArduinoJson.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
+// ───────── BLE ─────────
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <BLE2902.h>
+
+// UUIDs padrão HM-10
+#define SERVICE_UUID         "0000ffe0-0000-1000-8000-00805f9b34fb"
+#define CHARACTERISTIC_UUID "0000ffe1-0000-1000-8000-00805f9b34fb"
+
+BLEServer* pServer = nullptr;
+BLECharacteristic* pChar = nullptr;
+bool bleConnected = false;
+
+// Callback BLE
+class ServerCallbacks : public BLEServerCallbacks {
+  void onConnect(BLEServer* s) override {
+    bleConnected = true;
+    Serial.println("BLE: cliente conectado");
+  }
+
+  void onDisconnect(BLEServer* s) override {
+    bleConnected = false;
+    Serial.println("BLE: cliente desconectado");
+    BLEDevice::startAdvertising();
+  }
+};
+
+// ───────── Sensores ─────────
+TinyGPSPlus gps;
+HardwareSerial SerialGPS(1);
+
+// DS18B20
+#define DS18B20_PIN 4
+OneWire oneWire(DS18B20_PIN);
+DallasTemperature ds18b20(&oneWire);
+
+// ───────── Pinos ─────────
+#define GPS_RX_PIN   16
+#define GPS_TX_PIN   17
+#define BATERIA_PIN  34
+#define LED_STATUS   2
+#define HALL_PIN     5
+
+// ───────── Configurações ─────────
+#define GPS_BAUD            9600
+#define INTERVALO_ENVIO_MS 500
+#define BATERIA_DIVISOR    2.0
+#define PULSOS_POR_VOLTA   2
+#define RPM_TIMEOUT_MS     500
+
+// ───────── RPM ─────────
+volatile uint32_t pulseCount = 0;
+volatile uint32_t lastPulseTime = 0;
+
+void IRAM_ATTR hallISR() {
+  pulseCount++;
+  lastPulseTime = millis();
+}
+
+float calcularRPM() {
+  if (millis() - lastPulseTime > RPM_TIMEOUT_MS)
+    return 0.0;
+
+  noInterrupts();
+  uint32_t pulsos = pulseCount;
+  pulseCount = 0;
+  interrupts();
+
+  float rpm = ((float)pulsos / PULSOS_POR_VOLTA)
+              * (60000.0 / INTERVALO_ENVIO_MS);
+
+  return rpm;
+}
+
+// ───────── Controle ─────────
+unsigned long ultimoEnvio = 0;
+
+// ─────────────────────────────
+void iniciarBLE() {
+
+  BLEDevice::init("MSV_ESP32");
+
+  pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new ServerCallbacks());
+
+  BLEService* pService = pServer->createService(SERVICE_UUID);
+
+  pChar = pService->createCharacteristic(
+            CHARACTERISTIC_UUID,
+            BLECharacteristic::PROPERTY_READ |
+            BLECharacteristic::PROPERTY_NOTIFY |
+            BLECharacteristic::PROPERTY_WRITE_NR
+          );
+
+  pChar->addDescriptor(new BLE2902());
+
+  pService->start();
+
+  BLEAdvertising* pAdv = BLEDevice::getAdvertising();
+
+  pAdv->addServiceUUID(SERVICE_UUID);
+  pAdv->setScanResponse(true);
+  pAdv->setMinPreferred(0x06);
+
+  BLEDevice::startAdvertising();
+
+  Serial.println("BLE iniciado");
+}
+
+// ─────────────────────────────
+void setup() {
+
+  Serial.begin(115200);
+  while (!Serial) delay(10);
+
+  pinMode(LED_STATUS, OUTPUT);
+  pinMode(BATERIA_PIN, INPUT);
+
+  pinMode(HALL_PIN, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(HALL_PIN), hallISR, FALLING);
+
+  // GPS
+  SerialGPS.begin(GPS_BAUD, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
+  Serial.println("GPS iniciado");
+
+  // DS18B20
+  ds18b20.begin();
+  Serial.println("DS18B20 iniciado");
+
+  // BLE
+  iniciarBLE();
+
+  for (int i = 0; i < 3; i++) {
+    digitalWrite(LED_STATUS, HIGH);
+    delay(200);
+
+    digitalWrite(LED_STATUS, LOW);
+    delay(200);
+  }
+
+  Serial.println("Setup completo");
+}
+
+// ─────────────────────────────
+void loop() {
+
+  while (SerialGPS.available() > 0) {
+    gps.encode(SerialGPS.read());
+  }
+
+  if (millis() - ultimoEnvio >= INTERVALO_ENVIO_MS) {
+
+    ultimoEnvio = millis();
+
+    String json = montarJSON();
+
+    if (bleConnected) {
+
+      String payload = json + "\n";
+
+      pChar->setValue(
+        (uint8_t*)payload.c_str(),
+        payload.length()
+      );
+
+      pChar->notify();
+
+      digitalWrite(
+        LED_STATUS,
+        !digitalRead(LED_STATUS)
+      );
+    }
+
+    Serial.println(json);
+  }
+}
+
+// ─────────────────────────────
+float lerBateria() {
+
+  long soma = 0;
+
+  for (int i = 0; i < 10; i++) {
+    soma += analogRead(BATERIA_PIN);
+    delay(1);
+  }
+
+  return ((soma / 10.0) * 3.3 / 4095.0)
+         * BATERIA_DIVISOR;
+}
+
+// ─────────────────────────────
+float lerDS18B20() {
+
+  ds18b20.requestTemperatures();
+
+  float temp = ds18b20.getTempCByIndex(0);
+
+  if (temp == DEVICE_DISCONNECTED_C) {
+    Serial.println("Erro DS18B20");
+    return 0;
+  }
+
+  return temp;
+}
+
+// ─────────────────────────────
+String montarJSON() {
+
+  StaticJsonDocument<256> doc;
+
+  // RPM
+  doc["rpm"] = calcularRPM();
+
+  // GPS
+  bool gpsValido =
+    gps.location.isValid() &&
+    gps.location.age() < 2000;
+
+  doc["latitude"] =
+    gpsValido ? gps.location.lat() : 0;
+
+  doc["longitude"] =
+    gpsValido ? gps.location.lng() : 0;
+
+  doc["velocidade"] =
+    (gps.speed.isValid() &&
+     gps.speed.age() < 2000)
+      ? gps.speed.kmph() : 0.0;
+
+  // DS18B20
+  doc["temp_motor"] = lerDS18B20();
+
+  // Bateria
+  doc["bateria"] = lerBateria();
+
+  // Status
+  doc["gps_ok"] = gpsValido;
+
+  doc["satelites"] =
+    gps.satellites.isValid()
+      ? (int)gps.satellites.value()
+      : 0;
+
+  String output;
+  serializeJson(doc, output);
+
+  return output;
+}
